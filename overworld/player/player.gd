@@ -1,29 +1,26 @@
 extends CharacterBody2D
 
-const TILE_SIZE = 16
-var speed = 5
-var jump_speed = 5
-
-var jumping_over_ledge: bool = false
+# Time it takes to walk to next tile
+var speed = 0.35
 
 var initial_position = Vector2(0,0)
 var input_direction = Vector2(0,0)
-var percent_to_tile = 0.0
 
-var gender = 'M'
+var gender = 'F'
 
-enum PlayerState { IDLE, TURNING, WALKING, JUMP }
+enum PlayerState { IDLE, TURNING, WALKING }
 enum FacingDirection { LEFT, RIGHT, UP, DOWN }
 
 var player_state = PlayerState.IDLE
 var facing_direction = FacingDirection.DOWN
 
-const GRASS_STEP = preload("res://overworld/player/grass_steps.tscn")
+@export_group("Level Info")
+@export var tile_map: TileMap
+@export var starting_tile: Vector2
 
-@onready var anim_tree = $AnimationTree
-@onready var anim_state = anim_tree.get("parameters/playback")
-@onready var collision_ray = $RayCast2D
-@onready var ledge_ray = $LedgeRayCast2D
+@onready var anim_tree: AnimationTree = $AnimationTree
+@onready var anim_state: AnimationNodeStateMachinePlayback = anim_tree.get("parameters/playback")
+@onready var TILE_SIZE = tile_map.tile_set.tile_size.x
 
 func _ready():
 	position = position.snapped(Vector2.ONE * TILE_SIZE)
@@ -36,47 +33,57 @@ func _ready():
 	elif gender == 'F':
 		$AnimatedSprite2D.animation = "Female"
 
-func _physics_process(delta):
-	match player_state:
-		PlayerState.TURNING:
-			return
-		PlayerState.IDLE:
-			process_priority_input()
-		PlayerState.WALKING:
-			if input_direction != Vector2.ZERO:
-				anim_state.travel("Walk")
-				move(delta)
-				
-			else:
-				anim_state.travel("Idle")
-				player_state = PlayerState.IDLE
-		PlayerState.JUMP:
-			jump(delta)
+# NOTE: Changed from _physics_process since we manage
+# our own collision now. See explanation in PR
+func _process(delta):
+	# If we are busy (see note above move()), wait and do not process
+	if player_state == PlayerState.WALKING || player_state == PlayerState.TURNING:
+		return
 	
-	move_and_slide()
+	# We are not busy, let's check for input
+	update_input_direction() # Note: this used to be process_priority_input
+	
+	# If there is no input and we are IDLE, set the animation
+	# This isn't done at the end of move() so that if we hold
+	# a walking direction we do not Idle in between movements
+	#
+	# ^ look at that consistent width comment shoooooooooowee
+	if input_direction == Vector2.ZERO:
+		if player_state == PlayerState.IDLE:
+			anim_state.travel("Idle")
+	
+	# We are not busy (idle) and ready to process the input
+	else:
+		# NOTE: need_to_turn sets FacingDirection
+		if need_to_turn():
+			player_state = PlayerState.TURNING
+			anim_state.travel("Turn")
+			# I moved this line because it doesn't seem to need to be set
+			# unless we are turning
+			anim_tree.set("parameters/Turn/blend_position", input_direction)
+		
+		# AnimationTree magic, I do not have the know-how about them to
+		# actually validate this is any way. Looks great to me!
+		anim_tree.set("parameters/Idle/blend_position", input_direction)
+		anim_tree.set("parameters/Walk/blend_position", input_direction)
 
-func process_priority_input():
+		# If we are currently idle but have an input direction, do the move!
+		if player_state == PlayerState.IDLE:
+			# NOTE: this is probably where collision checking should go
+			# e.g. canWalkToTile(position_to_tile(position.x/y +/- TILE_SIZE))
+			anim_state.travel("Walk")
+			move()
+
+func update_input_direction():
 	if input_direction.y == 0:
 		input_direction.x = int(Input.is_action_pressed("move_east")) - int(Input.is_action_pressed("move_west"))
 	if input_direction.x == 0:
 		input_direction.y = int(Input.is_action_pressed("move_south")) - int(Input.is_action_pressed("move_north"))
-	
-	if input_direction != Vector2.ZERO:
-		anim_tree.set("parameters/Idle/blend_position", input_direction)
-		anim_tree.set("parameters/Walk/blend_position", input_direction)
-		anim_tree.set("parameters/Turn/blend_position", input_direction)
-		
-		if need_to_turn():
-			player_state = PlayerState.TURNING
-			anim_state.travel("Turn")
-		else:
-			player_state = PlayerState.WALKING
-			initial_position = position
-			
-	else:
-		player_state = PlayerState.IDLE
-		anim_state.travel("Idle")
 
+# There are probably more "clever" ways of
+# writing this function but it __really__
+# does NOT matter, its performance is 100%
+# negligible
 func need_to_turn():
 	var new_facing_direction
 	if input_direction.x < 0:
@@ -91,64 +98,26 @@ func need_to_turn():
 	if facing_direction != new_facing_direction:
 		facing_direction = new_facing_direction
 		return true
-	facing_direction = new_facing_direction
-	return false
+	else:
+		return false
 
+# NOTE: this is called by $AnimationPlayer at the
+# end of Turn__ animations. Neat trick! Wish Godot
+# actually told us though -- it's not even in stack frames!!
 func finished_turning():
 	player_state = PlayerState.IDLE
 
-func move(delta):
-	var desired_step: Vector2 = input_direction * TILE_SIZE/2
-	collision_ray.target_position = desired_step
-	collision_ray.force_raycast_update()
-	
-	ledge_ray.target_position = desired_step
-	ledge_ray.force_raycast_update()
-	
-	if (ledge_ray.is_colliding() and input_direction == Vector2(0,1)):
-		player_state = PlayerState.JUMP
-	elif (ledge_ray.is_colliding()):
-		percent_to_tile = 0.0
-		player_state = PlayerState.IDLE
-	elif !collision_ray.is_colliding():
-		percent_to_tile += speed * delta
-		if percent_to_tile >= 1.0:
-			position = initial_position + (TILE_SIZE * input_direction)
-			percent_to_tile = 0.0
-			player_state = PlayerState.IDLE
-		else:
-			position = initial_position + (TILE_SIZE * input_direction * percent_to_tile)
-	else:
-		percent_to_tile = 0.0
-		player_state = PlayerState.IDLE
-
-var tile_position
-
-func jump(delta):
-	percent_to_tile += jump_speed * delta
-	if percent_to_tile >= 2.0:
-		position = initial_position + (input_direction * TILE_SIZE * 2)
-		percent_to_tile = 0.0
-		jumping_over_ledge = false
-		player_state = PlayerState.IDLE
-	else:
-		var input = input_direction.y * TILE_SIZE * percent_to_tile
-		position.y = initial_position.y + (-0.96 - 0.53 * input + 0.05 * pow(input, 2))
-
-func _on_area_2d_body_entered(body):
-	if body is TileMap:
-		tile_position = body.local_to_map(position)
-		#Check if player is standing in grass
-		if body.get_cell_atlas_coords(1, tile_position) == Vector2i(7,0):
-			$Shadow.visible = false
-			body.set_cell(2, tile_position, body.get_cell_source_id(1, tile_position, false), Vector2i(8,0), 0)
-			var grass_step_inst = GRASS_STEP.instantiate()
-			grass_step_inst.position = body.map_to_local(tile_position)
-			get_tree().current_scene.add_child(grass_step_inst)
-
-
-func _on_area_2d_body_exited(body):
-	if body is TileMap:
-		$Shadow.visible = true
-		body.erase_cell(2, tile_position)
-
+# Pretty straight forward, we "lock" our character by setting
+# our state to WALKING, then we await for the tween to finish.
+# Finally, we "unlock" our character by setting them back to IDLE
+#
+# NOTE: the "lock" is enforced by _process based on player_state.
+# I'd suggest adding a helper isBusy() function that checks if
+# we are busy ("locked") by checking our state, e.g.
+# PlayerState.WALKING, PlayerState.INTERACTING, PlayerState.TALKING
+func move():
+	player_state = PlayerState.WALKING
+	var tween = get_tree().create_tween()
+	tween.tween_property(self, "position", position + (TILE_SIZE * input_direction), speed)
+	await tween.finished
+	player_state = PlayerState.IDLE 
