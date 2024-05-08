@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://7hb71i3qec3o"
+path="res://.godot/imported/pikipek_cry.ogg-c76158845557b6d8e392dfb8bf38bb2e.oggvorbisstr"
+
+[deps]
+
+source_file="res://audio/pokemon cries/pikipek_cry.ogg"
+dest_files=["res://.godot/imported/pikipek_cry.ogg-c76158845557b6d8e392dfb8bf38bb2e.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

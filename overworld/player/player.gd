@@ -113,6 +113,7 @@ func tile_action_entered(start_position, tile_position):
 		var grass_step_inst = GRASS_STEP.instantiate()
 		grass_step_inst.position = tile_position
 		get_tree().current_scene.add_child(grass_step_inst)
+		handle_encounter("grass")
 	if tilemap.get_cell_atlas_coords(1, atlas_start) == Vector2i(7, 0) and facing_direction != FacingDirection.DOWN:
 		tilemap.erase_cell(2, atlas_start)
 
@@ -185,3 +186,8 @@ func set_spawn(location, direction):
 	anim_tree.set("parameters/Turn/blend_position", direction)
 	anim_tree.set("parameters/Jump/blend_position", direction)
 	position = location
+
+func handle_encounter(type):
+	var rate = 11
+	if type == "grass" and rate >= randi_range(0,100):
+		print("encounter!")

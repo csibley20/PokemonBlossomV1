@@ -1,0 +1,37 @@
+[gd_resource type="Resource" load_steps=8 format=3 uid="uid://dr7fm0cxotcjb"]
+
+[ext_resource type="AudioStream" uid="uid://7hb71i3qec3o" path="res://audio/pokemon cries/pikipek_cry.ogg" id="1_7ny6t"]
+[ext_resource type="Script" path="res://pokemon/pokemon_base.gd" id="2_vcmo5"]
+[ext_resource type="Texture2D" uid="uid://co3ajynmkst4s" path="res://assets/pokemon sprites/pikipek/font_shiny.png" id="3_unii5"]
+[ext_resource type="Texture2D" uid="uid://se6jrrrifig6" path="res://assets/pokemon sprites/pikipek/back_shiny.png" id="4_br00r"]
+[ext_resource type="Texture2D" uid="uid://dxbmwn5s31dh6" path="res://assets/pokemon sprites/pikipek/font.png" id="5_pw5k0"]
+[ext_resource type="Texture2D" uid="uid://rlbocvbgby65" path="res://assets/pokemon sprites/pikipek/back.png" id="6_66o75"]
+[ext_resource type="Texture2D" uid="uid://83ruuqmg657a" path="res://assets/pokemon sprites/pikipek/icon.png" id="7_i5g7h"]
+
+[resource]
+script = ExtResource("2_vcmo5")
+species_name = "Pikipek"
+dex_id = "035"
+type1 = "Normal"
+type2 = "Flying"
+abilities = []
+hp = 35
+attack = 75
+defense = 30
+sp_attack = 30
+sp_defense = 30
+speed = 65
+weight = 1.2
+gender_ratio_female = 50.0
+base_xp_yield = 53
+capture_rate = 255
+growth_rate = "Medium Fast"
+lvl_one_moves = []
+lvl_learnset = {}
+tm_learnset = []
+sprite_front = ExtResource("5_pw5k0")
+sprite_back = ExtResource("3_unii5")
+sprite_front_shiny = ExtResource("6_66o75")
+sprite_back_shiny = ExtResource("4_br00r")
+sprite_icons = ExtResource("7_i5g7h")
+cry = ExtResource("1_7ny6t")

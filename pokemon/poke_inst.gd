@@ -5,6 +5,8 @@ var display_name
 var pokemon_stat_location
 var pokemon_species
 
+var types
+
 var hp
 var atk
 var def
@@ -34,8 +36,10 @@ var current_spatk
 var current_spdef
 var current_speed
 
+var crit_stage
+
 var shiny = false
-var feinted
+var fainted
 
 var front_sprite
 var back_sprite
@@ -76,7 +80,13 @@ const NATURE_DICT = {
 }
 
 func create_poke(species, init_level, nature):
+	
 	pokemon_species = species
+	
+	if species.type2 != "":
+		types = [species.type1, species.type2]
+	else:
+		types = [species.type1]
 	
 	level = init_level
 	
@@ -110,7 +120,9 @@ func create_poke(species, init_level, nature):
 	current_spdef = spdef
 	current_speed = speed
 	
-	feinted = false
+	crit_stage = 0
+	
+	fainted = false
 
 func set_stat_total():
 	var atk_nature = NATURE_DICT[nature_name][0]
@@ -161,3 +173,9 @@ func randomize_gender(female_ratio):
 			# male
 			result = 0
 	return result
+
+func calc_resists():
+	pass
+
+func calc_weakness():
+	pass
